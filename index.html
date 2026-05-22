@@ -6,25 +6,37 @@
     <title>Go-Ride | Sistem cont utilizator - ride-sharing modern</title>
     <meta name="description" content="Go-Ride - serviciu de ride-sharing. Înregistrare cu e-mail sau telefon, autentificare și recuperare parolă. Călătorește sigur.">
     
-    <!-- Preload critice -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <!-- Preconnect doar pentru domeniile esențiale -->
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://unpkg.com">
     
-    <!-- Font cu font-display: swap -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <!-- Google Fonts - ÎNCĂRCARE ASINCRONĂ, fără blocare render -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap"></noscript>
     
-    <!-- Font Awesome local - fără blocare -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" media="print" onload="this.media='all'">
+    <!-- Font Awesome - async -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" media="print" onload="this.media='all';this.onload=null">
     
-    <!-- Leaflet CSS async -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    <!-- Leaflet CSS - async -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all';this.onload=null">
     
-    <!-- Leaflet JS defer -->
+    <!-- Leaflet JS - defer -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
     
     <style>
+    /* ============ FONT-FACE PENTRU STABILITATE LAYOUT ============ */
+    @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 300 800;
+        font-display: swap;
+        src: local('Inter'), local('Inter-Regular');
+        size-adjust: 105%;
+        ascent-override: 95%;
+        descent-override: 25%;
+    }
+    
     /* ============ RESET & VARIABILE ============ */
     :root {
         --primary: #f5b042;
@@ -71,7 +83,7 @@
     }
 
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         background-color: var(--bg);
         color: var(--dark);
         line-height: 1.5;
@@ -1014,7 +1026,7 @@
             <!-- Dinamic JS -->
         </div>
         <button class="mobile-menu-btn" id="menuToggle" aria-label="Meniu mobil" aria-expanded="false">
-            <i class="fas fa-bars"></i>
+            <i class="fas fa-bars" aria-hidden="true"></i>
         </button>
     </div>
 </header>
@@ -1280,6 +1292,7 @@ let map = null;
 let driverMarker = null;
 let userMarker = null;
 let trackingInterval = null;
+let selectedDriver = null;
 
 // ============ UTILITARE ============
 function saveUsers() { localStorage.setItem('goRideUsers', JSON.stringify(users)); }
@@ -1473,8 +1486,6 @@ function findNearbyDrivers(lat, lon) {
         .sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,5);
 }
 
-let selectedDriver = null;
-
 function showDrivers(drivers, pickup) {
     const container = document.getElementById('nearbyDriversContainer'), list = document.getElementById('driversList');
     if (!container||!list) return;
@@ -1597,10 +1608,10 @@ function showPayment(amount, details, cb) {
                 cs.style.display = 'block';
                 cs.innerHTML = `<div class="card-input">
                     <h4>Detalii card</h4>
-                    <input type="text" id="cardNumber" placeholder="Număr card (16 cifre)" maxlength="19">
+                    <input type="text" id="cardNumber" placeholder="Număr card (16 cifre)" maxlength="19" inputmode="numeric">
                     <div style="display:flex;gap:10px;">
-                        <input type="text" id="cardExpiry" placeholder="MM/AA" style="flex:1;" maxlength="5">
-                        <input type="password" id="cardCvv" placeholder="CVV" style="flex:1;" maxlength="4">
+                        <input type="text" id="cardExpiry" placeholder="MM/AA" style="flex:1;" maxlength="5" inputmode="numeric">
+                        <input type="password" id="cardCvv" placeholder="CVV" style="flex:1;" maxlength="4" inputmode="numeric">
                     </div></div>`;
             } else cs.style.display = 'none';
         });
@@ -1627,8 +1638,8 @@ function initMap(uLat, uLon, dLat, dLon) {
         attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
     
-    const userIcon = L.divIcon({ className:'', html:'<div style="background:#3b82f6;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);"></div>', iconSize:[24,24] });
-    const driverIcon = L.divIcon({ className:'', html:'<div style="background:#f5b042;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);"><i class="fas fa-car" style="position:absolute;top:6px;left:7px;font-size:12px;color:#1e293b;"></i></div>', iconSize:[28,28] });
+    const userIcon = L.divIcon({ className:'', html:'<div style="background:#3b82f6;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);" aria-label="Locația dvs."></div>', iconSize:[24,24] });
+    const driverIcon = L.divIcon({ className:'', html:'<div style="background:#f5b042;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);" aria-label="Șofer"><i class="fas fa-car" style="position:absolute;top:6px;left:7px;font-size:12px;color:#1e293b;"></i></div>', iconSize:[28,28] });
     
     userMarker = L.marker([uLat, uLon], { icon: userIcon }).addTo(map).bindPopup('Dvs.');
     driverMarker = L.marker([dLat, dLon], { icon: driverIcon }).addTo(map).bindPopup('Șofer');
@@ -1714,7 +1725,7 @@ function showRatingDialog(driver, details) {
         const ratings = JSON.parse(localStorage.getItem('goRideRatings')||'[]');
         ratings.push({ driverId:driver.id, driverName:driver.name, rating:rVal, review, date:new Date().toISOString() });
         localStorage.setItem('goRideRatings', JSON.stringify(ratings));
-        updateRideRating(details?.date||details?.priceDetails?.date, rVal, review);
+        updateRideRating(details?.date, rVal, review);
         showNotification('Mulțumim!', `${rVal} stele pentru ${driver.name}.`, 'success', 4000);
         closeRating();
     };
