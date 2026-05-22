@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Go-Ride | Sistem cont utilizator - ride-sharing modern</title>
+    <meta name="description" content="Go-Ride - serviciu de ride-sharing. Înregistrare cu e-mail sau telefon, autentificare și recuperare parolă. Călătorește sigur.">
+    
+    <!-- Preload critice -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://unpkg.com">
+    
+    <!-- Font cu font-display: swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome local - fără blocare -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" media="print" onload="this.media='all'">
+    
+    <!-- Leaflet CSS async -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" media="print" onload="this.media='all'">
+    
+    <!-- Leaflet JS defer -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
+    
+    <style>
+    /* ============ RESET & VARIABILE ============ */
+    :root {
+        --primary: #f5b042;
+        --primary-hover: #e69c2e;
+        --primary-light: #fef3e2;
+        --primary-bg: #fffbee;
+        --dark: #0f172a;
+        --dark-secondary: #1e293b;
+        --gray: #475569;
+        --gray-light: #64748b;
+        --gray-lighter: #94a3b8;
+        --border: #e2e8f0;
+        --bg: #f8fafc;
+        --white: #ffffff;
+        --error: #dc2626;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --error-bg: #fee2e2;
+        --success-bg: #e0f2e9;
+        --radius-sm: 12px;
+        --radius: 16px;
+        --radius-lg: 24px;
+        --radius-xl: 32px;
+        --radius-full: 40px;
+        --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+        --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+        --shadow-primary: 0 4px 12px rgba(245,176,66,0.3);
+        --transition: 0.25s ease;
+    }
+
+    *,
+    *::before,
+    *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        background-color: var(--bg);
+        color: var(--dark);
+        line-height: 1.5;
+        min-height: 100vh;
+        overflow-x: hidden;
+    }
+
+    .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 24px;
+    }
+
+    /* ============ BUTOANE ============ */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px 28px;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: 100px;
+        transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+        cursor: pointer;
+        border: none;
+        text-decoration: none;
+        font-family: inherit;
+        line-height: 1.4;
+        will-change: transform;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: var(--dark-secondary);
+        box-shadow: var(--shadow-primary);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-hover);
+        transform: scale(1.02);
+    }
+    
+    .btn-primary:focus-visible {
+        outline: 3px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    .btn-secondary {
+        background: var(--dark-secondary);
+        color: var(--white);
+    }
+
+    .btn-secondary:hover {
+        background: #334155;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-outline:hover {
+        background: rgba(245,176,66,0.06);
+    }
+
+    /* ============ NAVBAR ============ */
+    .navbar {
+        background: var(--white);
+        box-shadow: var(--shadow);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .nav-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        padding: 16px 24px;
+        max-width: 1280px;
+        margin: 0 auto;
+    }
+
+    .logo {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        font-size: 1.8rem;
+        font-weight: 800;
+    }
+
+    .logo span:first-child { color: var(--dark); }
+    .logo span:last-child { 
+        color: var(--primary); 
+        background: var(--primary-light); 
+        padding: 2px 8px; 
+        border-radius: var(--radius-full); 
+        font-size: 1.2rem; 
+    }
+
+    .nav-links {
+        display: flex;
+        gap: 32px;
+        align-items: center;
+    }
+
+    .nav-links a {
+        text-decoration: none;
+        font-weight: 500;
+        color: var(--gray);
+        transition: color var(--transition);
+    }
+    .nav-links a:hover { color: var(--primary); }
+
+    .nav-buttons {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: #f1f5f9;
+        padding: 6px 16px;
+        border-radius: var(--radius-full);
+    }
+    .user-info i { font-size: 1.2rem; color: var(--primary); }
+    .logout-btn { 
+        background: none; 
+        border: none; 
+        color: var(--error); 
+        cursor: pointer; 
+        font-weight: 500;
+        font-family: inherit;
+        font-size: 0.9rem;
+    }
+
+    .mobile-menu-btn {
+        display: none;
+        font-size: 1.8rem;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--dark);
+        padding: 4px;
+    }
+
+    /* ============ HERO ============ */
+    .hero {
+        padding: 80px 0 70px;
+        background: linear-gradient(135deg, #fff9f0 0%, var(--white) 100%);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before,
+    .hero::after {
+        content: '';
+        position: absolute;
+        border-radius: 50%;
+        z-index: 0;
+    }
+
+    .hero::before {
+        top: -50px;
+        right: -50px;
+        width: 300px;
+        height: 300px;
+        background: radial-gradient(circle, rgba(245,176,66,0.15) 0%, transparent 70%);
+    }
+
+    .hero::after {
+        bottom: -30px;
+        right: 200px;
+        width: 200px;
+        height: 200px;
+        background: radial-gradient(circle, rgba(245,176,66,0.1) 0%, transparent 70%);
+    }
+
+    .hero-grid {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+        flex-wrap: wrap;
+        position: relative;
+        z-index: 1;
+    }
+
+    .hero-text { 
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .hero-text h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--dark-secondary), #3b2e24);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 16px;
+        line-height: 1.2;
+    }
+
+    .hero-text p {
+        font-size: 1.1rem;
+        color: var(--gray);
+        margin-bottom: 24px;
+        line-height: 1.6;
+    }
+
+    .hero-buttons {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .hero-stats {
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+    }
+
+    .hero-stat {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .hero-stat i {
+        font-size: 1.2rem;
+        color: var(--primary);
+    }
+
+    .hero-stat strong {
+        font-size: 1.3rem;
+        color: var(--dark-secondary);
+    }
+
+    .hero-stat span {
+        font-size: 0.85rem;
+        color: var(--gray-light);
+    }
+
+    /* Hero illustration - emblemă centrală */
+    .hero-illustration { 
+        flex: 1;
+        text-align: center;
+        position: relative;
+        min-width: 350px;
+        min-height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-logo-center {
+        width: 180px;
+        height: 180px;
+        background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 50px rgba(245,176,66,0.4);
+        animation: logoPulse 4s ease-in-out infinite;
+        position: relative;
+        z-index: 3;
+    }
+
+    .hero-logo-center::before {
+        content: '';
+        position: absolute;
+        top: -15px;
+        left: -15px;
+        right: -15px;
+        bottom: -15px;
+        border-radius: 50%;
+        border: 3px dashed rgba(255,255,255,0.4);
+        animation: rotateDashed 12s linear infinite;
+    }
+
+    .hero-logo-center::after {
+        content: '';
+        position: absolute;
+        top: -25px;
+        left: -25px;
+        right: -25px;
+        bottom: -25px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(245,176,66,0.3) 0%, transparent 70%);
+        z-index: -1;
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .hero-logo-text {
+        font-size: 2.8rem;
+        font-weight: 900;
+        color: var(--white);
+        text-align: center;
+        line-height: 1;
+        text-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        letter-spacing: -1px;
+    }
+
+    .hero-logo-text span {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 600;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        opacity: 0.9;
+    }
+
+    .hero-floating-elements {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 2;
+    }
+
+    .floating-icon {
+        position: absolute;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.1);
+        animation: floatCar 6s ease-in-out infinite;
+        background: var(--white);
+        border: 3px solid var(--primary);
+        will-change: transform;
+    }
+
+    .floating-icon:nth-child(1) {
+        width: 100px;
+        height: 100px;
+        top: 0%;
+        left: 0%;
+        animation-delay: 0s;
+        background: linear-gradient(135deg, #fff9f0, #ffffff);
+    }
+
+    .floating-icon:nth-child(2) {
+        width: 85px;
+        height: 85px;
+        top: 0%;
+        right: 0%;
+        animation-delay: 1.5s;
+        background: linear-gradient(135deg, #ffffff, #fef9e6);
+    }
+
+    .floating-icon:nth-child(3) {
+        width: 90px;
+        height: 90px;
+        bottom: 0%;
+        right: 5%;
+        animation-delay: 3s;
+        background: linear-gradient(135deg, #fef3e2, #ffffff);
+    }
+
+    .floating-icon:nth-child(4) {
+        width: 75px;
+        height: 75px;
+        bottom: 5%;
+        left: 5%;
+        animation-delay: 4.5s;
+        background: linear-gradient(135deg, #ffffff, #fff9f0);
+    }
+
+    .floating-icon i {
+        color: var(--primary);
+    }
+
+    .floating-icon:nth-child(1) i { font-size: 2.8rem; }
+    .floating-icon:nth-child(2) i { font-size: 2.3rem; }
+    .floating-icon:nth-child(3) i { font-size: 2.5rem; }
+    .floating-icon:nth-child(4) i { font-size: 2rem; }
+
+    .floating-icon::after {
+        content: '';
+        position: absolute;
+        top: -12px;
+        left: -12px;
+        right: -12px;
+        bottom: -12px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(245,176,66,0.12) 0%, transparent 70%);
+        z-index: -1;
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .floating-icon:nth-child(2)::after { animation-delay: 0.7s; }
+    .floating-icon:nth-child(3)::after { animation-delay: 1.4s; }
+    .floating-icon:nth-child(4)::after { animation-delay: 2.1s; }
+
+    /* ============ ANIMAȚII ============ */
+    @keyframes floatCar {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        30% { transform: translateY(-18px) rotate(4deg); }
+        60% { transform: translateY(-8px) rotate(-2deg); }
+        85% { transform: translateY(-22px) rotate(3deg); }
+    }
+
+    @keyframes logoPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 20px 50px rgba(245,176,66,0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 25px 60px rgba(245,176,66,0.6); }
+    }
+
+    @keyframes pulseGlow {
+        0%, 100% { transform: scale(1); opacity: 0.4; }
+        50% { transform: scale(1.25); opacity: 0.7; }
+    }
+
+    @keyframes rotateDashed {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============ CARDURI COMUNE ============ */
+    .booking-card, .auth-card, .route-card {
+        background: var(--white);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-lg);
+        padding: 32px 28px;
+        margin-top: 20px;
+        margin-bottom: 40px;
+    }
+
+    .auth-card {
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* ============ FORMULARE ============ */
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        color: var(--dark-secondary);
+    }
+    .form-group input,
+    .form-group textarea {
+        width: 100%;
+        padding: 14px 18px;
+        border-radius: var(--radius-xl);
+        border: 1px solid var(--border);
+        font-size: 1rem;
+        font-family: inherit;
+        transition: border-color var(--transition), box-shadow var(--transition);
+        background: var(--white);
+    }
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(245,176,66,0.15);
+    }
+
+    .tab-buttons {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        background: none;
+        border: none;
+        font-size: 1.1rem;
+        font-weight: 600;
+        padding: 8px 16px;
+        cursor: pointer;
+        border-radius: var(--radius-full);
+        color: var(--gray-light);
+        font-family: inherit;
+        transition: all var(--transition);
+    }
+    .tab-btn.active {
+        background: rgba(245,176,66,0.1);
+        color: var(--primary);
+    }
+    .tab-btn:hover {
+        color: var(--primary);
+    }
+    .tab-btn:focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    .auth-switch {
+        text-align: center;
+        margin-top: 16px;
+        font-size: 0.9rem;
+        color: var(--gray);
+    }
+    .auth-switch a {
+        color: var(--primary);
+        cursor: pointer;
+        text-decoration: underline;
+        font-weight: 500;
+    }
+
+    .message {
+        padding: 12px 16px;
+        border-radius: 28px;
+        margin-top: 16px;
+        text-align: center;
+        font-weight: 500;
+        animation: fadeIn 0.3s ease;
+    }
+    .message.error { background: var(--error-bg); color: #991b1b; border: 1px solid var(--error); }
+    .message.success { background: var(--success-bg); color: #166534; border: 1px solid var(--success); }
+
+    /* ============ FORM ROW ============ */
+    .form-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+    .form-row .form-group {
+        flex: 1;
+        min-width: 200px;
+    }
+    .geo-btn {
+        margin-top: 8px;
+        background: #f1f5f9;
+        border: none;
+        padding: 10px;
+        border-radius: var(--radius-full);
+        width: 100%;
+        font-weight: 500;
+        cursor: pointer;
+        font-family: inherit;
+        color: var(--dark-secondary);
+        transition: background var(--transition);
+    }
+    .geo-btn:hover {
+        background: var(--border);
+    }
+
+    /* ============ RUTE ============ */
+    .route-option {
+        border: 2px solid #eef2ff;
+        border-radius: 28px;
+        padding: 18px;
+        margin: 16px 0;
+        transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+        cursor: pointer;
+        background: var(--white);
+    }
+    .route-option.selected {
+        border-color: var(--primary);
+        background: var(--primary-bg);
+        box-shadow: 0 8px 20px rgba(245,176,66,0.15);
+    }
+    .route-option:hover {
+        box-shadow: var(--shadow-sm);
+    }
+
+    .route-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    .route-name {
+        font-weight: 800;
+        font-size: 1.3rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .route-details {
+        display: flex;
+        gap: 24px;
+        flex-wrap: wrap;
+        color: var(--gray);
+        font-size: 0.9rem;
+        margin-top: 8px;
+    }
+    .price-badge {
+        background: rgba(245,176,66,0.1);
+        padding: 6px 16px;
+        border-radius: var(--radius-full);
+        font-weight: 700;
+        color: #b45309;
+    }
+
+    /* ============ PLĂȚI ============ */
+    .payment-method-card {
+        border: 2px solid var(--border);
+        border-radius: 20px;
+        padding: 20px;
+        margin: 15px 0;
+        cursor: pointer;
+        transition: border-color var(--transition), background var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    .payment-method-card i { font-size: 2rem; color: var(--primary); }
+    .payment-method-card.selected { border-color: var(--primary); background: var(--primary-bg); }
+    .card-input {
+        margin-top: 15px;
+        padding: 15px;
+        background: var(--bg);
+        border-radius: var(--radius);
+    }
+    .card-input input {
+        width: 100%;
+        padding: 12px;
+        margin: 8px 0;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        font-family: inherit;
+    }
+
+    /* ============ NOTIFICĂRI ============ */
+    .notification {
+        background: var(--white);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        border-left: 4px solid var(--primary);
+        animation: slideIn 0.3s ease;
+        position: relative;
+    }
+    .notification.info { border-left-color: var(--info); }
+    .notification.success { border-left-color: var(--success); }
+    .notification.warning { border-left-color: var(--warning); }
+    .notification.error { border-left-color: var(--error); }
+
+    .notification-close {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        cursor: pointer;
+        color: var(--gray-lighter);
+        font-size: 1.2rem;
+        background: none;
+        border: none;
+        font-family: inherit;
+    }
+    .notification-close:hover { color: var(--gray); }
+
+    /* ============ RATING ============ */
+    .star-rating {
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: center;
+        gap: 10px;
+        margin: 20px 0;
+    }
+    .star-rating input { display: none; }
+    .star-rating label {
+        font-size: 2.5rem;
+        color: #cbd5e1;
+        cursor: pointer;
+        transition: color var(--transition), transform var(--transition);
+    }
+    .star-rating label:hover,
+    .star-rating label:hover ~ label,
+    .star-rating input:checked ~ label { 
+        color: var(--primary);
+        transform: scale(1.1);
+    }
+    .review-textarea {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        resize: vertical;
+        font-family: inherit;
+        margin-top: 10px;
+    }
+
+    /* ============ ISTORIC ============ */
+    .history-list {
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 20px;
+    }
+    .history-item {
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        margin-bottom: 12px;
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .history-item:hover {
+        border-color: var(--primary);
+        box-shadow: 0 4px 12px rgba(245,176,66,0.1);
+    }
+    .history-item i { font-size: 1.5rem; color: var(--primary); }
+    .history-details { flex: 1; min-width: 150px; }
+    .history-date { font-size: 0.8rem; color: var(--gray-light); }
+    .history-cost { font-weight: 700; color: var(--primary); font-size: 1.1rem; }
+    .history-rating { color: var(--primary); font-size: 0.9rem; }
+    .clear-history-btn {
+        background: none;
+        border: 1px solid var(--error);
+        color: var(--error);
+        padding: 8px 16px;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        margin-top: 15px;
+        transition: background var(--transition);
+        font-family: inherit;
+    }
+    .clear-history-btn:hover { background: var(--error-bg); }
+    .no-history {
+        text-align: center;
+        padding: 30px;
+        color: var(--gray-lighter);
+    }
+    .no-history i {
+        font-size: 3rem;
+        color: #cbd5e1;
+        margin-bottom: 10px;
+    }
+
+    /* ============ DRIVER AVATAR ============ */
+    .driver-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 2px solid var(--primary);
+    }
+
+    /* ============ TARIFE ============ */
+    .tariff-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 24px;
+        justify-content: center;
+        margin: 40px 0;
+    }
+    .tariff-card {
+        background: var(--white);
+        border-radius: 28px;
+        padding: 24px;
+        text-align: center;
+        flex: 1;
+        min-width: 200px;
+        box-shadow: var(--shadow-sm);
+        transition: transform var(--transition), box-shadow var(--transition);
+        will-change: transform;
+    }
+    .tariff-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow);
+    }
+    .tariff-card i {
+        font-size: 2.5rem;
+        color: var(--primary);
+        margin: 12px 0;
+    }
+
+    /* ============ FOOTER ============ */
+    footer {
+        background: var(--dark);
+        color: #cbd5e1;
+        padding: 40px 0 20px;
+        margin-top: 40px;
+    }
+    .footer-grid {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 24px;
+    }
+
+    /* ============ LEAFLET ============ */
+    .leaflet-container {
+        border-radius: 24px;
+        z-index: 1;
+        background: #f1f5f9;
+    }
+
+    /* ============ OVERLAY ============ */
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1999;
+    }
+
+    .modal-panel {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2000;
+        width: 450px;
+        max-width: 90%;
+    }
+
+    /* ============ MEDIA QUERIES ============ */
+    @media (max-width: 900px) {
+        .nav-links { display: none; }
+        .nav-links.show {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            padding: 20px 0;
+            background: white;
+        }
+        .mobile-menu-btn { display: block; }
+        .hero-text h1 { font-size: 2rem; }
+        .hero-illustration { min-height: 300px; }
+        .hero-logo-center { width: 140px; height: 140px; }
+        .hero-logo-text { font-size: 2.2rem; }
+        .hero-logo-text span { font-size: 1rem; }
+        .floating-icon:nth-child(1) { width: 75px; height: 75px; }
+        .floating-icon:nth-child(2) { width: 65px; height: 65px; }
+        .floating-icon:nth-child(3) { width: 70px; height: 70px; }
+        .floating-icon:nth-child(4) { width: 60px; height: 60px; }
+        .floating-icon:nth-child(1) i { font-size: 2rem !important; }
+        .floating-icon:nth-child(2) i { font-size: 1.7rem !important; }
+        .floating-icon:nth-child(3) i { font-size: 1.9rem !important; }
+        .floating-icon:nth-child(4) i { font-size: 1.5rem !important; }
+        
+        .hero-floating-elements {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            position: relative;
+            margin-top: 30px;
+            height: auto;
+        }
+        .floating-icon {
+            position: relative;
+            top: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            left: auto !important;
+            animation: mobileFloat 4s ease-in-out infinite;
+        }
+    }
+
+    @keyframes mobileFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(5deg); }
+    }
+
+    @media (max-width: 600px) {
+        .hero-text h1 { font-size: 1.8rem; }
+        .hero-illustration { min-height: 250px; }
+        .hero-logo-center { width: 110px; height: 110px; }
+        .hero-logo-text { font-size: 1.8rem; }
+        .hero-logo-text span { font-size: 0.8rem; }
+        .floating-icon { width: 55px !important; height: 55px !important; }
+        .floating-icon i { font-size: 1.3rem !important; }
+        .tab-buttons { flex-direction: column; gap: 8px; }
+        .hero-stats { flex-direction: column; gap: 12px; }
+    }
+
+    /* ============ ACCESSIBILITY ============ */
+    @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+    }
+
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        white-space: nowrap;
+        border: 0;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+    </style>
+</head>
+<body>
+
+<header class="navbar" role="banner">
+    <div class="nav-container">
+        <div class="logo" aria-label="Go-Ride Logo"><span>Go-</span><span>Ride</span></div>
+        <nav class="nav-links" id="navLinks" aria-label="Navigare principală">
+            <a href="#acasa">Acasă</a>
+            <a href="#planificator">Comandă</a>
+            <a href="#tarife">Tarife</a>
+            <a href="#cont">Contul meu</a>
+        </nav>
+        <div class="nav-buttons" id="navButtons" aria-label="Acțiuni utilizator">
+            <!-- Dinamic JS -->
+        </div>
+        <button class="mobile-menu-btn" id="menuToggle" aria-label="Meniu mobil" aria-expanded="false">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+</header>
+
+<main id="main-content">
+    <!-- Hero section -->
+    <section id="acasa" class="hero" aria-labelledby="hero-heading">
+        <div class="container hero-grid">
+            <div class="hero-text">
+                <h1 id="hero-heading">Go-Ride: ride-sharing modern</h1>
+                <p>Înregistrează-te cu e-mail sau telefon, autentifică-te și recuperează parola. Călătorii sigure, prețuri corecte.</p>
+                <div class="hero-buttons">
+                    <a href="#cont" class="btn btn-primary" id="heroAccountBtn" aria-label="Creează cont nou"><i class="fas fa-user-plus" aria-hidden="true"></i> Creează-ți contul</a>
+                    <a href="#planificator" class="btn btn-outline" aria-label="Comandă o cursă"><i class="fas fa-map-marker-alt" aria-hidden="true"></i> Comandă o cursă</a>
+                </div>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                        <div><strong>100%</strong><br><span>Siguranță</span></div>
+                    </div>
+                    <div class="hero-stat">
+                        <i class="fas fa-bolt" aria-hidden="true"></i>
+                        <div><strong>3-7 min</strong><br><span>Așteptare</span></div>
+                    </div>
+                    <div class="hero-stat">
+                        <i class="fas fa-star" aria-hidden="true"></i>
+                        <div><strong>4.8/5</strong><br><span>Rating</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-illustration" aria-hidden="true">
+                <div class="hero-logo-center">
+                    <div class="hero-logo-text">GO<span>RIDE</span></div>
+                </div>
+                <div class="hero-floating-elements">
+                    <div class="floating-icon"><i class="fas fa-car"></i></div>
+                    <div class="floating-icon"><i class="fas fa-car-side"></i></div>
+                    <div class="floating-icon"><i class="fas fa-truck"></i></div>
+                    <div class="floating-icon"><i class="fas fa-motorcycle"></i></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Planificator rute -->
+    <div class="container" id="planificator">
+        <div class="booking-card">
+            <h2 style="margin-bottom:20px;"><i class="fas fa-route" aria-hidden="true"></i> Planifică-ți călătoria</h2>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="startPoint"><i class="fas fa-circle-dot" aria-hidden="true"></i> Punct de plecare</label>
+                    <input type="text" id="startPoint" placeholder="Stradă, oraș, punct reper" value="Chișinău, str. 31 August 1989" autocomplete="off">
+                    <button type="button" id="detectStartBtn" class="geo-btn" aria-label="Folosește locația mea"><i class="fas fa-location-dot" aria-hidden="true"></i> Folosește locația mea</button>
+                </div>
+                <div class="form-group">
+                    <label for="endPoint"><i class="fas fa-flag-checkered" aria-hidden="true"></i> Destinație</label>
+                    <input type="text" id="endPoint" placeholder="Adresa destinației" value="Aeroportul Internațional Chișinău" autocomplete="off">
+                </div>
+            </div>
+            <button id="planRouteBtn" class="btn btn-primary" style="width:100%;margin-bottom:15px;"><i class="fas fa-map" aria-hidden="true"></i> Propune rute și calculează costul</button>
+            <div id="loadingIndicator" style="display:none;text-align:center;margin:15px 0;" role="status" aria-live="polite">
+                <i class="fas fa-spinner fa-pulse" aria-hidden="true"></i> Se calculează rutele...
+            </div>
+        </div>
+
+        <div id="routesContainer" style="display:none;">
+            <div class="route-card">
+                <h3><i class="fas fa-random" aria-hidden="true"></i> Selectează ruta preferată</h3>
+                <div id="routesList"></div>
+                <div id="selectedRouteInfo" style="margin-top:20px;padding:16px;background:#fef9e6;border-radius:28px;"></div>
+                <button id="confirmRideBtn" class="btn btn-primary" style="margin-top:20px;width:100%;"><i class="fas fa-check-circle" aria-hidden="true"></i> Comandă pe ruta selectată</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Șoferi disponibili -->
+    <div class="container" id="nearbyDriversContainer" style="display:none;margin-top:30px;">
+        <div class="route-card">
+            <h3><i class="fas fa-users" aria-hidden="true"></i> Șoferi disponibili în apropiere</h3>
+            <div id="driversList"></div>
+            <div id="selectedDriverInfo" style="margin-top:16px;padding:12px;background:#eef2ff;border-radius:24px;display:none;"></div>
+        </div>
+    </div>
+
+    <!-- Detalii cursă -->
+    <div class="container" id="rideDetailsPanel" style="display:none;margin-top:30px;">
+        <div class="route-card" style="background:linear-gradient(135deg,#fff 0%,#fef7e6 100%);">
+            <h3><i class="fas fa-receipt" aria-hidden="true"></i> Detaliile comenzii</h3>
+            <div id="rideDetailsContent"></div>
+            <div style="display:flex;gap:15px;margin-top:25px;flex-wrap:wrap;">
+                <button id="confirmRideFinalBtn" class="btn btn-primary" style="flex:1;"><i class="fas fa-check-circle" aria-hidden="true"></i> Confirmă comanda</button>
+                <button id="cancelRideBtn" class="btn btn-outline" style="flex:1;"><i class="fas fa-times-circle" aria-hidden="true"></i> Anulează comanda</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hartă tracking -->
+    <div class="container" id="trackingPanel" style="display:none;margin-top:30px;">
+        <div class="route-card">
+            <h3><i class="fas fa-map" aria-hidden="true"></i> Urmărire cursă în timp real</h3>
+            <div id="map" style="height:400px;border-radius:24px;margin-bottom:15px;" role="application" aria-label="Hartă urmărire cursă"></div>
+            <div id="rideStatus" style="padding:15px;background:#f1f5f9;border-radius:20px;margin-top:15px;" role="status" aria-live="polite">
+                <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <span><strong>Status cursă:</strong> <span id="statusText">Așteptare confirmare</span></span>
+                    <span><strong>Șofer:</strong> <span id="trackingDriverName">-</span></span>
+                    <span><strong>Distanță rămasă:</strong> <span id="distanceRemaining">-</span></span>
+                    <span><strong>Timp estimat:</strong> <span id="timeRemaining">-</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plăți -->
+    <div class="container" id="paymentPanel" style="display:none;margin-top:30px;">
+        <div class="route-card">
+            <h3><i class="fas fa-credit-card" aria-hidden="true"></i> Metoda de plată</h3>
+            <div id="paymentContent"></div>
+        </div>
+    </div>
+
+    <!-- Notificări -->
+    <div id="notificationsPanel" style="position:fixed;top:20px;right:20px;z-index:1000;width:320px;" aria-live="polite" aria-label="Notificări"></div>
+
+    <!-- Rating modal -->
+    <div id="ratingOverlay" class="overlay" style="display:none;"></div>
+    <div id="ratingPanel" class="modal-panel" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="rating-heading">
+        <div class="route-card" style="background:white;box-shadow:0 25px 50px rgba(0,0,0,0.3);">
+            <h3 id="rating-heading"><i class="fas fa-star" aria-hidden="true"></i> Evaluează cursa</h3>
+            <div id="ratingContent"></div>
+            <div style="display:flex;gap:15px;margin-top:20px;">
+                <button id="submitRatingBtn" class="btn btn-primary" style="flex:1;">Trimite evaluarea</button>
+                <button id="closeRatingBtn" class="btn btn-outline" style="flex:1;">Mai târziu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cont utilizator -->
+    <div class="container" id="cont">
+        <div class="auth-card" id="authCard">
+            <div class="tab-buttons" role="tablist">
+                <button class="tab-btn active" id="loginTabBtn" role="tab" aria-selected="true">Autentificare</button>
+                <button class="tab-btn" id="registerTabBtn" role="tab" aria-selected="false">Înregistrare</button>
+                <button class="tab-btn" id="forgotTabBtn" role="tab" aria-selected="false">Ai uitat parola?</button>
+            </div>
+
+            <div id="loginForm" role="tabpanel">
+                <div class="form-group">
+                    <label for="loginEmailPhone"><i class="fas fa-envelope" aria-hidden="true"></i> E-mail sau Telefon</label>
+                    <input type="text" id="loginEmailPhone" placeholder="exemplu@mail.com sau 069123456" autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword"><i class="fas fa-lock" aria-hidden="true"></i> Parolă</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button id="doLoginBtn" class="btn btn-primary" style="width:100%" aria-label="Intră în cont">Intră în cont</button>
+                <div class="auth-switch">Nu ai cont? <a id="switchToRegister" role="button" tabindex="0">Înregistrează-te</a></div>
+            </div>
+
+            <div id="registerForm" style="display:none;" role="tabpanel">
+                <div class="form-group">
+                    <label for="regName"><i class="fas fa-user" aria-hidden="true"></i> Nume complet</label>
+                    <input type="text" id="regName" placeholder="Ion Popescu" autocomplete="name">
+                </div>
+                <div class="form-group">
+                    <label for="regEmail"><i class="fas fa-envelope" aria-hidden="true"></i> Adresă e-mail</label>
+                    <input type="email" id="regEmail" placeholder="email@exemplu.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label for="regPhone"><i class="fas fa-phone-alt" aria-hidden="true"></i> Număr telefon</label>
+                    <input type="tel" id="regPhone" placeholder="069123456" autocomplete="tel">
+                </div>
+                <div class="form-group">
+                    <label for="regPassword"><i class="fas fa-lock" aria-hidden="true"></i> Parolă</label>
+                    <input type="password" id="regPassword" placeholder="Minim 6 caractere" autocomplete="new-password">
+                </div>
+                <button id="doRegisterBtn" class="btn btn-primary" style="width:100%" aria-label="Înregistrează-te">Înregistrează-te</button>
+                <div class="auth-switch">Ai deja cont? <a id="switchToLogin" role="button" tabindex="0">Autentifică-te</a></div>
+            </div>
+
+            <div id="forgotForm" style="display:none;" role="tabpanel">
+                <p>Introdu e-mail-ul sau numărul de telefon. Vei primi un cod de resetare (simulat).</p>
+                <div class="form-group">
+                    <label for="resetContact"><i class="fas fa-envelope" aria-hidden="true"></i> E-mail sau Telefon</label>
+                    <input type="text" id="resetContact" placeholder="email sau telefon" autocomplete="username">
+                </div>
+                <button id="sendResetBtn" class="btn btn-primary" style="width:100%">Trimite cod de resetare</button>
+                <div class="auth-switch"><a id="backToLoginFromReset" role="button" tabindex="0">Înapoi la autentificare</a></div>
+                <div id="resetCodeSection" style="display:none;margin-top:20px;">
+                    <div class="form-group">
+                        <label for="resetCode">Cod primit (demo: 123456)</label>
+                        <input type="text" id="resetCode" placeholder="Introdu codul" autocomplete="one-time-code">
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">Noua parolă</label>
+                        <input type="password" id="newPassword" placeholder="Noua parolă" autocomplete="new-password">
+                    </div>
+                    <button id="confirmResetBtn" class="btn btn-primary">Resetează parola</button>
+                </div>
+            </div>
+            <div id="authMessage" class="message" style="display:none;" role="alert"></div>
+        </div>
+
+        <div id="userPanel" style="display:none;" class="booking-card">
+            <h3><i class="fas fa-id-card" aria-hidden="true"></i> Bun venit, <span id="userNameDisplay"></span>!</h3>
+            <p><i class="fas fa-envelope" aria-hidden="true"></i> <span id="userEmailDisplay"></span> &nbsp;|&nbsp; <i class="fas fa-phone" aria-hidden="true"></i> <span id="userPhoneDisplay"></span></p>
+            <p>Ești autentificat în sistemul Go-Ride. Poți comanda curse rapid, iar istoricul tău este salvat.</p>
+            <div style="margin-top:25px;border-top:2px solid var(--border);padding-top:20px;">
+                <h4 style="display:flex;justify-content:space-between;align-items:center;">
+                    <span><i class="fas fa-history" aria-hidden="true"></i> Istoricul curselor tale</span>
+                    <span id="historyCount" style="font-size:0.9rem;color:var(--gray-light);"></span>
+                </h4>
+                <div id="rideHistory" class="history-list"></div>
+                <button id="clearHistoryBtn" class="clear-history-btn" style="display:none;"><i class="fas fa-trash-alt" aria-hidden="true"></i> Șterge istoricul</button>
+            </div>
+            <button id="logoutBtnMain" class="btn btn-outline" style="margin-top:16px;"><i class="fas fa-sign-out-alt" aria-hidden="true"></i> Delogare</button>
+        </div>
+    </div>
+
+    <!-- Tarife -->
+    <div class="container" id="tarife">
+        <h2 class="section-title" style="text-align:center;">Tarifele noastre</h2>
+        <div class="tariff-grid">
+            <div class="tariff-card">
+                <i class="fas fa-car" aria-hidden="true"></i>
+                <h3>Economy</h3>
+                <p>25 lei/km</p>
+                <p>Mașini compacte, preț accesibil</p>
+            </div>
+            <div class="tariff-card">
+                <i class="fas fa-car-side" aria-hidden="true"></i>
+                <h3>Comfort</h3>
+                <p>35 lei/km</p>
+                <p>Mai mult spațiu și confort</p>
+            </div>
+            <div class="tariff-card">
+                <i class="fas fa-briefcase" aria-hidden="true"></i>
+                <h3>Business</h3>
+                <p>50 lei/km</p>
+                <p>Premium, șoferi de top</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer role="contentinfo">
+    <div class="container footer-grid">
+        <div><h4>Go-Ride</h4><p>Ride-sharing modern & sigur</p></div>
+        <div><h4>Contact</h4><p>+373 22 999 888 | support@go-ride.md</p></div>
+        <div><h4>Legal</h4><p>Termeni & Confidențialitate</p></div>
+    </div>
+    <div class="container copyright" style="text-align:center;margin-top:24px;">&copy; 2026 Go-Ride. Toate drepturile rezervate.</div>
+</footer>
+
+<script>
+// ============ STARE APLICAȚIE ============
+let users = JSON.parse(localStorage.getItem('goRideUsers')) || [];
+let currentUser = JSON.parse(sessionStorage.getItem('goRideCurrentUser')) || null;
+let currentRoutes = [];
+let selectedRouteIndex = 0;
+let selectedPaymentMethod = null;
+let currentRideDetails = null;
+let map = null;
+let driverMarker = null;
+let userMarker = null;
+let trackingInterval = null;
+
+// ============ UTILITARE ============
+function saveUsers() { localStorage.setItem('goRideUsers', JSON.stringify(users)); }
+
+function showAuthMessage(text, isError = true) {
+    const msgDiv = document.getElementById('authMessage');
+    if (!msgDiv) return;
+    msgDiv.textContent = text;
+    msgDiv.className = 'message ' + (isError ? 'error' : 'success');
+    msgDiv.style.display = 'block';
+    setTimeout(() => { if (msgDiv) msgDiv.style.display = 'none'; }, 4000);
+}
+
+function showNotification(title, message, type = 'info', duration = 5000) {
+    const panel = document.getElementById('notificationsPanel');
+    if (!panel) return;
+    const icons = { info: 'fa-info-circle', success: 'fa-check-circle', warning: 'fa-exclamation-triangle', error: 'fa-times-circle' };
+    const icon = icons[type] || 'fa-info-circle';
+    
+    const el = document.createElement('div');
+    el.className = 'notification ' + type;
+    el.innerHTML = `
+        <div style="display:flex;gap:12px;align-items:flex-start;">
+            <i class="fas ${icon}" style="font-size:1.2rem;" aria-hidden="true"></i>
+            <div style="flex:1;"><strong>${title}</strong><p style="margin:5px 0 0;font-size:0.85rem;color:#475569;">${message}</p></div>
+            <button class="notification-close" aria-label="Închide notificarea">&times;</button>
+        </div>`;
+    panel.appendChild(el);
+    
+    el.querySelector('.notification-close').addEventListener('click', () => el.remove());
+    setTimeout(() => { if (el.parentNode) el.remove(); }, duration);
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+    const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLon = (lon2-lon1)*Math.PI/180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function estimateWait(distanceKm) { return Math.round(distanceKm / 30 * 60); }
+
+function calcDynamicPrice(distanceKm, durationMin, tariff = 25, base = 10) {
+    const hour = new Date().getHours();
+    let demand = 'scazut', multiplier = 1.0;
+    if ((hour>=7&&hour<=9)||(hour>=17&&hour<=19)) { demand='ridicat'; multiplier=1.5; }
+    else if ((hour>=10&&hour<=16)||(hour>=20&&hour<=22)) { demand='mediu'; multiplier=1.2; }
+    const distCost = distanceKm * tariff, timeCost = durationMin * 0.5;
+    return { total: Math.round((distCost+timeCost+base)*multiplier), distCost: Math.round(distCost),
+             timeCost: Math.round(timeCost), base, multiplier, demand,
+             distanceKm, durationMinutes: durationMin };
+}
+
+async function geocode(addr) {
+    try {
+        const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1&accept-language=ro`);
+        const d = await r.json();
+        if (d.length) return { lat: +d[0].lat, lon: +d[0].lon, display: d[0].display_name };
+    } catch(e) { console.error(e); }
+    return null;
+}
+
+async function getOSRMRoutes(sLon, sLat, eLon, eLat) {
+    try {
+        const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${eLon},${eLat}?overview=false&geometries=geojson&alternatives=true&steps=false`);
+        const d = await r.json();
+        return d.routes || null;
+    } catch(e) { return null; }
+}
+
+// ============ GEOLOCALIZARE ============
+function detectLocation() {
+    if (!navigator.geolocation) { alert('Browserul nu suportă geolocalizarea.'); return; }
+    const btn = document.getElementById('detectStartBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Se caută...';
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+            const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&zoom=18&addressdetails=1&accept-language=ro`);
+            const d = await r.json();
+            let addr = d?.display_name || `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+            if (d?.address) {
+                const parts = [d.address.road||d.address.street, d.address.house_number, d.address.city||d.address.town].filter(Boolean);
+                if (parts.length) addr = parts.join(', ');
+            }
+            document.getElementById('startPoint').value = addr;
+        } catch { document.getElementById('startPoint').value = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; }
+        finally { btn.innerHTML = orig; btn.disabled = false; }
+    }, () => { alert('Accesul la locație a fost refuzat.'); btn.innerHTML = orig; btn.disabled = false; });
+}
+
+// ============ PLANIFICARE RUTE ============
+function displayRoutes(routes, start, end) {
+    const container = document.getElementById('routesContainer'), list = document.getElementById('routesList');
+    if (!container || !list) return;
+    list.innerHTML = '';
+    if (!routes?.length) { list.innerHTML = '<p>Nu s-au putut genera rute.</p>'; container.style.display='block'; return; }
+    currentRoutes = routes;
+    routes.forEach((r, i) => {
+        const km = (r.distance/1000).toFixed(1), min = Math.round(r.duration/60);
+        const price = Math.round(km*25+10);
+        const div = document.createElement('div');
+        div.className = 'route-option' + (i===selectedRouteIndex?' selected':'');
+        div.innerHTML = `
+            <div class="route-header">
+                <div class="route-name"><i class="fas fa-${i===0?'bolt':i===1?'road':'balance-scale'}"></i> ${r.name}</div>
+                <div class="price-badge">💰 ${price} lei</div>
+            </div>
+            <div class="route-details">
+                <span><i class="fas fa-ruler-combined"></i> ${km} km</span>
+                <span><i class="fas fa-clock"></i> ${min} min</span>
+                <span><i class="fas fa-gas-pump"></i> ${r.trafficDesc||'normal'}</span>
+            </div>`;
+        div.addEventListener('click', () => {
+            list.querySelectorAll('.route-option').forEach(el=>el.classList.remove('selected'));
+            div.classList.add('selected');
+            selectedRouteIndex = i;
+            updateSelectedInfo(r, start, end);
+        });
+        list.appendChild(div);
+    });
+    container.style.display = 'block';
+    updateSelectedInfo(routes[selectedRouteIndex], start, end);
+}
+
+function updateSelectedInfo(route, start, end) {
+    const info = document.getElementById('selectedRouteInfo');
+    if (!info) return;
+    const km = (route.distance/1000).toFixed(1);
+    info.innerHTML = `
+        <h4><i class="fas fa-chart-line"></i> Detalii: <strong>${route.name}</strong></h4>
+        <p>📍 ${start} → ${end}</p>
+        <p>📏 ${km} km | ⏱️ ${Math.round(route.duration/60)} min</p>
+        <div style="background:white;border-radius:24px;padding:12px;margin-top:12px;">
+            <strong>💰 Cost estimativ:</strong><br>
+            Economy: ${Math.round(km*25+10)} lei | Comfort: ${Math.round(km*35+10)} lei | Business: ${Math.round(km*50+10)} lei
+        </div>
+        <button id="findDriversBtn" class="btn btn-secondary" style="width:100%;margin-top:16px;"><i class="fas fa-search-location"></i> Caută șoferi în apropiere</button>`;
+    
+    document.getElementById('findDriversBtn').addEventListener('click', async () => {
+        const loading = document.getElementById('loadingIndicator');
+        loading.style.display='block';
+        loading.innerHTML='<i class="fas fa-spinner fa-pulse"></i> Se caută șoferi...';
+        const geo = await geocode(start);
+        if (!geo) { alert('Adresă negăsită.'); loading.style.display='none'; return; }
+        const drivers = findNearbyDrivers(geo.lat, geo.lon);
+        showDrivers(drivers, start);
+        loading.style.display='none';
+    });
+}
+
+async function planRoutes() {
+    const start = document.getElementById('startPoint').value.trim(), end = document.getElementById('endPoint').value.trim();
+    if (!start || !end) { alert('Completează ambele adrese.'); return; }
+    const loading = document.getElementById('loadingIndicator');
+    loading.style.display='block';
+    document.getElementById('routesContainer').style.display='none';
+    try {
+        const sGeo = await geocode(start), eGeo = await geocode(end);
+        if (!sGeo || !eGeo) { alert('Coordonate negăsite.'); return; }
+        const osrm = await getOSRMRoutes(sGeo.lon, sGeo.lat, eGeo.lon, eGeo.lat);
+        let arr = [];
+        if (osrm?.length) {
+            arr.push({ name: '>> Ruta rapidă', distance: osrm[0].distance, duration: osrm[0].duration, description: 'Optimizat pentru timp minim.', trafficDesc: 'optim' });
+            if (osrm[1]) arr.push({ name: '>> Ruta alternativă', distance: osrm[1].distance, duration: osrm[1].duration, description: 'Trafic variabil.', trafficDesc: 'moderat' });
+            else arr.push({ name: '# Ruta scurtă', distance: osrm[0].distance*0.88, duration: osrm[0].duration*1.05, description: 'Distanță redusă.', trafficDesc: 'secundar' });
+            arr.push({ name: '~ Ruta Balance', distance: osrm[0].distance*0.95, duration: osrm[0].duration*0.98, description: 'Echilibru.', trafficDesc: 'fluctuant' });
+        } else {
+            const dist = haversine(sGeo.lat,sGeo.lon,eGeo.lat,eGeo.lon)*1250, dur = dist/35*3600;
+            arr = [
+                { name:'>> Ruta optimă', distance:dist, duration:dur, description:'Recomandată.', trafficDesc:'normal' },
+                { name:'* Ruta panoramică', distance:dist*1.18, duration:dur*1.1, description:'Peisaje.', trafficDesc:'lejer' },
+                { name:'# Ruta urbană', distance:dist*0.92, duration:dur*0.95, description:'Principală.', trafficDesc:'rapid' }
+            ];
+        }
+        displayRoutes(arr, start, end);
+    } finally { loading.style.display='none'; }
+}
+
+// ============ ȘOFERI ============
+const driversDB = [
+    { id:1, name:'Andrei M.', rating:4.9, car:'Hyundai Elantra', type:'Economy', lat:47.0105, lon:28.8638, phone:'+373 69 123 456', avatar:'https://i.pravatar.cc/50?img=1' },
+    { id:2, name:'Irina C.', rating:4.8, car:'Skoda Octavia', type:'Comfort', lat:47.0150, lon:28.8570, phone:'+373 68 234 567', avatar:'https://i.pravatar.cc/50?img=2' },
+    { id:3, name:'Vladimir S.', rating:4.95, car:'Toyota Camry', type:'Business', lat:47.0080, lon:28.8700, phone:'+373 67 345 678', avatar:'https://i.pravatar.cc/50?img=3' },
+    { id:4, name:'Dumitru R.', rating:4.7, car:'Dacia Logan', type:'Economy', lat:47.0200, lon:28.8500, phone:'+373 60 456 789', avatar:'https://i.pravatar.cc/50?img=4' },
+    { id:5, name:'Elena T.', rating:4.85, car:'Renault Megane', type:'Comfort', lat:47.0050, lon:28.8750, phone:'+373 69 567 890', avatar:'https://i.pravatar.cc/50?img=5' }
+];
+
+function findNearbyDrivers(lat, lon) {
+    return driversDB.map(d=>({...d, distanceKm:haversine(lat,lon,d.lat,d.lon), waitMin:estimateWait(haversine(lat,lon,d.lat,d.lon))}))
+        .sort((a,b)=>a.distanceKm-b.distanceKm).slice(0,5);
+}
+
+let selectedDriver = null;
+
+function showDrivers(drivers, pickup) {
+    const container = document.getElementById('nearbyDriversContainer'), list = document.getElementById('driversList');
+    if (!container||!list) return;
+    list.innerHTML = '';
+    if (!drivers.length) { list.innerHTML='<p>Niciun șofer disponibil.</p>'; container.style.display='block'; return; }
+    drivers.forEach(d => {
+        const stars = '★'.repeat(Math.floor(d.rating))+'☆'.repeat(5-Math.floor(d.rating));
+        const card = document.createElement('div');
+        card.className = 'route-option';
+        card.style.cursor = 'pointer';
+        card.innerHTML = `
+            <div class="route-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <img src="${d.avatar}" alt="${d.name}" class="driver-avatar" loading="lazy" onerror="this.style.display='none'">
+                    <div>${d.name}<span style="font-size:0.9rem;color:#f5b042;display:block;">${stars} ${d.rating}</span></div>
+                </div>
+                <div class="price-badge">${d.type}</div>
+            </div>
+            <div class="route-details">
+                <span><i class="fas fa-car"></i> ${d.car}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${d.distanceKm.toFixed(1)} km</span>
+                <span><i class="fas fa-hourglass-half"></i> ~${d.waitMin} min</span>
+            </div>`;
+        card.addEventListener('click', () => {
+            list.querySelectorAll('.route-option').forEach(el=>el.classList.remove('selected'));
+            card.classList.add('selected');
+            selectDriver(d, pickup);
+        });
+        list.appendChild(card);
+    });
+    container.style.display = 'block';
+}
+
+function selectDriver(driver, pickup) {
+    selectedDriver = driver;
+    const info = document.getElementById('selectedDriverInfo');
+    if (!info) return;
+    info.style.display = 'block';
+    const route = currentRoutes[selectedRouteIndex];
+    const price = calcDynamicPrice(route.distance/1000, Math.round(route.duration/60));
+    const stars = '★'.repeat(Math.floor(driver.rating))+'☆'.repeat(5-Math.floor(driver.rating));
+    info.innerHTML = `
+        <div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap;">
+            <img src="${driver.avatar}" alt="${driver.name}" class="driver-avatar" style="width:60px;height:60px;" loading="lazy">
+            <div>
+                <strong><i class="fas fa-check-circle"></i> ${driver.name}</strong><br>
+                <span>${stars} ${driver.rating} · ${driver.car} (${driver.type})</span><br>
+                <span>📞 ${driver.phone} · 🚗 ${driver.distanceKm.toFixed(1)} km / ~${driver.waitMin} min</span>
+            </div>
+        </div>
+        <hr style="margin:12px 0;">
+        <strong>Preț estimativ: ${price.total} lei</strong><br>
+        <small>(Cerere: ${price.demand==='ridicat'?'Ridicat +50%':price.demand==='mediu'?'Mediu +20%':'Normal'})</small><br>
+        <button id="viewFullDetailsBtn" class="btn btn-primary" style="margin-top:12px;width:100%;"><i class="fas fa-info-circle"></i> Vezi detaliile complete</button>`;
+    
+    document.getElementById('viewFullDetailsBtn').addEventListener('click', () => showRideDetails(route, driver, pickup, document.getElementById('endPoint').value, price));
+}
+
+function showRideDetails(route, driver, start, end, price) {
+    currentRideDetails = { route, driver, startAddr: start, endAddr: end, priceDetails: price, date: new Date().toISOString() };
+    const panel = document.getElementById('rideDetailsPanel'), content = document.getElementById('rideDetailsContent');
+    if (!panel||!content) return;
+    const stars = '★'.repeat(Math.floor(driver.rating))+'☆'.repeat(5-Math.floor(driver.rating));
+    const demandColors = { ridicat: '#dc2626', mediu: '#f59e0b', scazut: '#10b981' };
+    content.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;">
+            <div style="flex:1;min-width:200px;">
+                <h4><i class="fas fa-map-marked-alt"></i> Cursa</h4>
+                <p><strong>Plecare:</strong> ${start}</p><p><strong>Destinație:</strong> ${end}</p>
+                <p><strong>Ruta:</strong> ${route.name}</p><p>${price.distanceKm.toFixed(1)} km · ${Math.round(price.durationMinutes)} min</p>
+            </div>
+            <div style="flex:1;min-width:200px;">
+                <h4><i class="fas fa-user"></i> Șofer</h4>
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                    <img src="${driver.avatar}" alt="${driver.name}" class="driver-avatar" style="width:60px;height:60px;" loading="lazy">
+                    <div><strong>${driver.name}</strong> ${stars} ${driver.rating}</div>
+                </div>
+                <p><i class="fas fa-car"></i> ${driver.car} (${driver.type})</p>
+                <p><i class="fas fa-phone"></i> ${driver.phone}</p>
+                <p>~${driver.waitMin} min · ${driver.distanceKm.toFixed(1)} km distanță</p>
+            </div>
+            <div style="flex:1;min-width:220px;background:#1e293b;border-radius:24px;padding:16px;color:white;">
+                <h4 style="color:#f5b042;"><i class="fas fa-coins"></i> Cost</h4>
+                <p style="font-size:2rem;font-weight:800;margin:10px 0;">${price.total} lei</p>
+                <div style="font-size:0.85rem;border-top:1px solid #475569;padding-top:10px;">
+                    <p>Distanță: ${price.distCost} lei · Durată: ${price.timeCost} lei · Bază: ${price.base} lei</p>
+                    <p style="color:${demandColors[price.demand]};font-weight:bold;">Cerere: ${price.demand==='ridicat'?'Ridicat +50%':price.demand==='mediu'?'Mediu +20%':'Normal'} (x${price.multiplier})</p>
+                </div>
+            </div>
+        </div>`;
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ============ PLĂȚI ============
+function showPayment(amount, details, cb) {
+    const panel = document.getElementById('paymentPanel'), content = document.getElementById('paymentContent');
+    if (!panel||!content) return;
+    content.innerHTML = `
+        <p style="text-align:center;font-size:1.2rem;margin-bottom:20px;">Total: <strong style="color:#f5b042;font-size:1.8rem;">${amount} lei</strong></p>
+        <div id="paymentMethodsList">
+            <div class="payment-method-card" data-method="cash"><i class="fas fa-money-bill-wave"></i><div><strong>Numerar</strong><p style="font-size:0.85rem;">Plătiți la finalul cursei</p></div></div>
+            <div class="payment-method-card" data-method="card"><i class="fas fa-credit-card"></i><div><strong>Card bancar</strong><p style="font-size:0.85rem;">Visa, Mastercard</p></div></div>
+        </div>
+        <div id="cardDetailsSection" style="display:none;"></div>
+        <div id="paymentError" style="color:#dc2626;margin-top:15px;text-align:center;"></div>
+        <button id="processPaymentBtn" class="btn btn-primary" style="width:100%;margin-top:20px;" disabled>Selectați metoda de plată</button>`;
+    panel.style.display = 'block';
+    
+    document.querySelectorAll('.payment-method-card').forEach(card => {
+        card.addEventListener('click', () => {
+            document.querySelectorAll('.payment-method-card').forEach(c=>c.classList.remove('selected'));
+            card.classList.add('selected');
+            selectedPaymentMethod = card.dataset.method;
+            const btn = document.getElementById('processPaymentBtn');
+            btn.disabled = false;
+            btn.innerHTML = 'Confirmă plata și comanda';
+            const cs = document.getElementById('cardDetailsSection');
+            if (selectedPaymentMethod === 'card') {
+                cs.style.display = 'block';
+                cs.innerHTML = `<div class="card-input">
+                    <h4>Detalii card</h4>
+                    <input type="text" id="cardNumber" placeholder="Număr card (16 cifre)" maxlength="19">
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="cardExpiry" placeholder="MM/AA" style="flex:1;" maxlength="5">
+                        <input type="password" id="cardCvv" placeholder="CVV" style="flex:1;" maxlength="4">
+                    </div></div>`;
+            } else cs.style.display = 'none';
+        });
+    });
+    
+    document.getElementById('processPaymentBtn').addEventListener('click', () => {
+        const err = document.getElementById('paymentError');
+        err.innerHTML = '';
+        if (selectedPaymentMethod === 'card') {
+            const num = (document.getElementById('cardNumber')?.value||'').replace(/\s/g,'');
+            if (num.length < 15) { err.innerHTML = 'Număr card invalid'; return; }
+        }
+        err.style.color = '#16a34a';
+        err.innerHTML = selectedPaymentMethod==='cash' ? 'Veți plăti în numerar.' : 'Plată procesată!';
+        setTimeout(() => { panel.style.display = 'none'; if(cb)cb(); }, 1500);
+    });
+}
+
+// ============ HARTĂ ȘI TRACKING ============
+function initMap(uLat, uLon, dLat, dLon) {
+    if (map) map.remove();
+    map = L.map('map').setView([uLat, uLon], 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    const userIcon = L.divIcon({ className:'', html:'<div style="background:#3b82f6;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);"></div>', iconSize:[24,24] });
+    const driverIcon = L.divIcon({ className:'', html:'<div style="background:#f5b042;width:28px;height:28px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.2);"><i class="fas fa-car" style="position:absolute;top:6px;left:7px;font-size:12px;color:#1e293b;"></i></div>', iconSize:[28,28] });
+    
+    userMarker = L.marker([uLat, uLon], { icon: userIcon }).addTo(map).bindPopup('Dvs.');
+    driverMarker = L.marker([dLat, dLon], { icon: driverIcon }).addTo(map).bindPopup('Șofer');
+    L.polyline([[uLat,uLon],[dLat,dLon]], { color:'#f5b042', weight:3, opacity:0.7 }).addTo(map);
+    map.fitBounds(L.latLngBounds([[uLat,uLon],[dLat,dLon]]), { padding:[50,50] });
+}
+
+function startTracking(driver, uLat, uLon) {
+    if (trackingInterval) clearInterval(trackingInterval);
+    showNotification('Cursă confirmată', `${driver.name} se îndreaptă către dvs.`, 'info', 5000);
+    let step = 0;
+    const steps = 20, dLat = (uLat-driver.lat)/steps, dLon = (uLon-driver.lon)/steps;
+    trackingInterval = setInterval(() => {
+        step++;
+        const nLat = driver.lat + dLat*step, nLon = driver.lon + dLon*step;
+        if (driverMarker) driverMarker.setLatLng([nLat, nLon]);
+        const remDist = haversine(nLat, nLon, uLat, uLon);
+        document.getElementById('distanceRemaining').textContent = remDist.toFixed(1)+' km';
+        document.getElementById('timeRemaining').textContent = estimateWait(remDist)+' min';
+        
+        if (remDist < 0.3 && step < steps) {
+            document.getElementById('statusText').textContent = 'Șoferul a ajuns!';
+            showNotification('Șoferul a ajuns', `${driver.name} este la locația de preluare.`, 'success', 5000);
+        }
+        if (step >= steps) {
+            clearInterval(trackingInterval);
+            trackingInterval = null;
+            document.getElementById('statusText').textContent = 'Cursă finalizată. Mulțumim!';
+            setTimeout(() => showRatingDialog(driver, currentRideDetails), 2000);
+            saveRideToHistory(currentRideDetails);
+        }
+    }, 1500);
+}
+
+function confirmFinalRide() {
+    if (!currentRideDetails) { alert('Nicio comandă activă.'); return; }
+    currentRideDetails.date = new Date().toISOString();
+    showPayment(currentRideDetails.priceDetails.total, currentRideDetails, async () => {
+        showNotification('Plată confirmată', `Suma: ${currentRideDetails.priceDetails.total} lei.`, 'success', 4000);
+        const geo = await geocode(currentRideDetails.startAddr);
+        if (geo && currentRideDetails.driver) {
+            document.getElementById('trackingPanel').style.display = 'block';
+            document.getElementById('statusText').textContent = 'Șoferul se îndreaptă spre dvs.';
+            document.getElementById('trackingDriverName').textContent = currentRideDetails.driver.name;
+            initMap(geo.lat, geo.lon, currentRideDetails.driver.lat, currentRideDetails.driver.lon);
+            startTracking(currentRideDetails.driver, geo.lat, geo.lon);
+        }
+        document.getElementById('rideDetailsPanel').style.display = 'none';
+    });
+}
+
+function cancelRide() {
+    if (confirm('Anulați comanda?')) {
+        document.getElementById('rideDetailsPanel').style.display = 'none';
+        currentRideDetails = null; selectedDriver = null;
+        document.getElementById('selectedDriverInfo').style.display = 'none';
+    }
+}
+
+// ============ RATING ============
+function showRatingDialog(driver, details) {
+    const panel = document.getElementById('ratingPanel'), overlay = document.getElementById('ratingOverlay'),
+          content = document.getElementById('ratingContent');
+    if (!panel||!overlay||!content) return;
+    content.innerHTML = `
+        <div style="text-align:center;">
+            <img src="${driver.avatar}" alt="${driver.name}" style="width:80px;height:80px;border-radius:50%;border:3px solid #f5b042;margin-bottom:10px;" loading="lazy">
+            <p><strong>${driver.name}</strong></p>
+            <p>${driver.car} · ${(details?.startAddr||'').substring(0,50)}...</p>
+            <p>Cost: ${details?.priceDetails?.total||0} lei</p>
+        </div>
+        <div class="star-rating">
+            ${[5,4,3,2,1].map(v=>`<input type="radio" name="rating" id="star${v}" value="${v}"><label for="star${v}" aria-label="${v} stele">★</label>`).join('')}
+        </div>
+        <textarea id="reviewText" class="review-textarea" rows="3" placeholder="Comentariu (opțional)..."></textarea>`;
+    panel.style.display = 'block';
+    overlay.style.display = 'block';
+    
+    document.getElementById('submitRatingBtn').onclick = () => {
+        const rating = document.querySelector('input[name="rating"]:checked');
+        if (!rating) { showNotification('Evaluați', 'Selectați un rating.', 'warning', 3000); return; }
+        const rVal = parseInt(rating.value), review = document.getElementById('reviewText')?.value||'';
+        const ratings = JSON.parse(localStorage.getItem('goRideRatings')||'[]');
+        ratings.push({ driverId:driver.id, driverName:driver.name, rating:rVal, review, date:new Date().toISOString() });
+        localStorage.setItem('goRideRatings', JSON.stringify(ratings));
+        updateRideRating(details?.date||details?.priceDetails?.date, rVal, review);
+        showNotification('Mulțumim!', `${rVal} stele pentru ${driver.name}.`, 'success', 4000);
+        closeRating();
+    };
+    document.getElementById('closeRatingBtn').onclick = closeRating;
+    overlay.onclick = closeRating;
+}
+
+function closeRating() {
+    document.getElementById('ratingPanel').style.display = 'none';
+    document.getElementById('ratingOverlay').style.display = 'none';
+}
+
+// ============ ISTORIC ============
+function saveRideToHistory(details) {
+    if (!currentUser||!details) return;
+    const history = JSON.parse(localStorage.getItem(`goRideHistory_${currentUser.id}`)||'[]');
+    history.unshift({
+        id: Date.now(), date: details.date||new Date().toISOString(),
+        startAddr: details.startAddr, endAddr: details.endAddr,
+        routeName: details.route?.name, distance: details.priceDetails?.distanceKm,
+        duration: details.priceDetails?.durationMinutes, cost: details.priceDetails?.total,
+        driverName: details.driver?.name, driverRating: details.driver?.rating,
+        carModel: details.driver?.car, carType: details.driver?.type,
+        paymentMethod: selectedPaymentMethod||'cash', status:'completed', rating:null, review:null
+    });
+    if (history.length > 50) history.splice(50);
+    localStorage.setItem(`goRideHistory_${currentUser.id}`, JSON.stringify(history));
+    setTimeout(displayRideHistory, 300);
+}
+
+function updateRideRating(rideDate, rating, review) {
+    if (!currentUser||!rideDate) return;
+    const history = JSON.parse(localStorage.getItem(`goRideHistory_${currentUser.id}`)||'[]');
+    let entry = history.find(h=>h.date===rideDate) || history.find(h=>!h.rating);
+    if (entry) { entry.rating = rating; entry.review = review; }
+    localStorage.setItem(`goRideHistory_${currentUser.id}`, JSON.stringify(history));
+    displayRideHistory();
+}
+
+function displayRideHistory() {
+    if (!currentUser) return;
+    const container = document.getElementById('rideHistory'), count = document.getElementById('historyCount'),
+          clearBtn = document.getElementById('clearHistoryBtn');
+    if (!container) return;
+    const history = JSON.parse(localStorage.getItem(`goRideHistory_${currentUser.id}`)||'[]');
+    if (count) count.textContent = `${history.length} cursă${history.length!==1?'e':''}`;
+    if (clearBtn) clearBtn.style.display = history.length ? 'inline-block' : 'none';
+    if (!history.length) {
+        container.innerHTML = '<div class="no-history"><i class="fas fa-road"></i><p>Nicio cursă în istoric.</p></div>';
+        return;
+    }
+    container.innerHTML = history.map(r=>{
+        const date = new Date(r.date).toLocaleDateString('ro-RO',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'});
+        const stars = r.rating ? '★'.repeat(r.rating)+'☆'.repeat(5-r.rating) : '';
+        return `<div class="history-item">
+            <i class="fas fa-${r.carType==='Business'?'briefcase':r.carType==='Comfort'?'car-side':'car'}"></i>
+            <div class="history-details">
+                <strong>${(r.startAddr||'').substring(0,30)}... → ${(r.endAddr||'').substring(0,30)}...</strong>
+                <div class="history-date">${date}</div>
+                <div style="font-size:0.85rem;color:#475569;">${(r.distance||0).toFixed(1)} km · ${Math.round(r.duration||0)} min · ${r.paymentMethod==='card'?'💳 Card':'💵 Numerar'}</div>
+                ${r.driverName!=='N/A'?`<div style="font-size:0.85rem;">Șofer: ${r.driverName} · ${r.carModel}</div>`:''}
+                ${r.rating?`<div class="history-rating">Evaluat: ${stars} ${r.rating}/5 ${r.review?'· "'+r.review.substring(0,50)+'"':''}</div>`:'<div style="font-size:0.8rem;color:#94a3b8;">Ne-evaluat</div>'}
+            </div>
+            <div class="history-cost">${r.cost} lei</div>
+        </div>`;
+    }).join('');
+}
+
+function clearRideHistory() {
+    if (!currentUser||!confirm('Ștergeți tot istoricul?')) return;
+    localStorage.removeItem(`goRideHistory_${currentUser.id}`);
+    displayRideHistory();
+    showNotification('Istoric șters', 'Istoricul a fost șters.', 'success', 3000);
+}
+
+// ============ AUTENTIFICARE ============
+function updateNavAndUI() {
+    const navBtns = document.getElementById('navButtons'), authCard = document.getElementById('authCard'),
+          userPanel = document.getElementById('userPanel');
+    if (currentUser) {
+        if (navBtns) navBtns.innerHTML = `<div class="user-info"><i class="fas fa-user-circle"></i> ${currentUser.name||currentUser.email.split('@')[0]} <button id="navbarLogoutBtn" class="logout-btn"><i class="fas fa-sign-out-alt"></i></button></div>`;
+        document.getElementById('navbarLogoutBtn')?.addEventListener('click', logoutUser);
+        if (authCard) authCard.style.display = 'none';
+        if (userPanel) {
+            userPanel.style.display = 'block';
+            document.getElementById('userNameDisplay').textContent = currentUser.name||'Utilizator';
+            document.getElementById('userEmailDisplay').textContent = currentUser.email;
+            document.getElementById('userPhoneDisplay').textContent = currentUser.phone||'n/a';
+            displayRideHistory();
+        }
+    } else {
+        if (navBtns) navBtns.innerHTML = '<a href="#cont" class="btn btn-primary" style="padding:8px 20px;">Cont</a>';
+        if (authCard) authCard.style.display = 'block';
+        if (userPanel) userPanel.style.display = 'none';
+    }
+}
+
+function logoutUser() {
+    sessionStorage.removeItem('goRideCurrentUser');
+    currentUser = null;
+    updateNavAndUI();
+    switchToLoginForm();
+    showAuthMessage('Te-ai delogat cu succes.', false);
+}
+
+function registerUser(name, email, phone, password) {
+    if (!email.trim()&&!phone.trim()) { showAuthMessage('Completează e-mail sau telefon'); return false; }
+    if (password.length<6) { showAuthMessage('Parola: minim 6 caractere'); return false; }
+    if (users.find(u=>u.email===email||u.phone===phone)) { showAuthMessage('Contul există deja'); return false; }
+    users.push({ id:Date.now(), name, email, phone, password });
+    saveUsers();
+    showAuthMessage('Cont creat! Autentifică-te.', false);
+    switchToLoginForm();
+    return true;
+}
+
+function loginUser(identifier, password) {
+    const user = users.find(u=>(u.email===identifier||u.phone===identifier)&&u.password===password);
+    if (user) {
+        currentUser = { id:user.id, name:user.name, email:user.email, phone:user.phone };
+        sessionStorage.setItem('goRideCurrentUser', JSON.stringify(currentUser));
+        updateNavAndUI();
+        showAuthMessage(`Bine ai venit, ${user.name||user.email}!`, false);
+        return true;
+    }
+    showAuthMessage('Date incorecte'); return false;
+}
+
+let pendingReset = null;
+
+function requestReset(contact) {
+    const user = users.find(u=>u.email===contact||u.phone===contact);
+    if (!user) { showAuthMessage('Cont inexistent.'); return false; }
+    pendingReset = contact;
+    document.getElementById('resetCodeSection').style.display = 'block';
+    showAuthMessage('Cod demo: 123456', false);
+    return true;
+}
+
+function confirmReset(code, newPass) {
+    if (code!=='123456') { showAuthMessage('Cod invalid.'); return false; }
+    if (!newPass||newPass.length<6) { showAuthMessage('Parolă minim 6 caractere.'); return false; }
+    const idx = users.findIndex(u=>u.email===pendingReset||u.phone===pendingReset);
+    if (idx===-1) return false;
+    users[idx].password = newPass;
+    saveUsers();
+    showAuthMessage('Parolă resetată!', false);
+    document.getElementById('resetCodeSection').style.display = 'none';
+    pendingReset = null;
+    switchToLoginForm();
+    return true;
+}
+
+function switchToLoginForm() {
+    ['loginForm','registerForm','forgotForm'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el)el.style.display=i===0?'block':'none';
+    });
+    ['loginTabBtn','registerTabBtn','forgotTabBtn'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el){el.classList.toggle('active',i===0);el.setAttribute('aria-selected',i===0);}
+    });
+    const rc=document.getElementById('resetCodeSection'); if(rc)rc.style.display='none';
+    pendingReset=null;
+    const msg=document.getElementById('authMessage'); if(msg)msg.style.display='none';
+}
+
+function switchToRegisterForm() {
+    ['loginForm','registerForm','forgotForm'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el)el.style.display=i===1?'block':'none';
+    });
+    ['loginTabBtn','registerTabBtn','forgotTabBtn'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el){el.classList.toggle('active',i===1);el.setAttribute('aria-selected',i===1);}
+    });
+    const rc=document.getElementById('resetCodeSection'); if(rc)rc.style.display='none';
+    const msg=document.getElementById('authMessage'); if(msg)msg.style.display='none';
+}
+
+function switchToForgotForm() {
+    ['loginForm','registerForm','forgotForm'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el)el.style.display=i===2?'block':'none';
+    });
+    ['loginTabBtn','registerTabBtn','forgotTabBtn'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        if(el){el.classList.toggle('active',i===2);el.setAttribute('aria-selected',i===2);}
+    });
+    const rc=document.getElementById('resetCodeSection'); if(rc)rc.style.display='none';
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', () => {
+    updateNavAndUI();
+    
+    // Mobile menu
+    const menuToggle = document.getElementById('menuToggle'), navLinks = document.getElementById('navLinks');
+    menuToggle?.addEventListener('click', () => {
+        const expanded = navLinks.classList.toggle('show');
+        menuToggle.setAttribute('aria-expanded', expanded);
+    });
+    
+    // Hero button
+    document.getElementById('heroAccountBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (!currentUser) switchToRegisterForm();
+        document.getElementById('cont')?.scrollIntoView({ behavior:'smooth' });
+    });
+    
+    // Tab-uri
+    document.getElementById('loginTabBtn')?.addEventListener('click', switchToLoginForm);
+    document.getElementById('registerTabBtn')?.addEventListener('click', switchToRegisterForm);
+    document.getElementById('forgotTabBtn')?.addEventListener('click', switchToForgotForm);
+    document.getElementById('switchToRegister')?.addEventListener('click', switchToRegisterForm);
+    document.getElementById('switchToLogin')?.addEventListener('click', switchToLoginForm);
+    document.getElementById('backToLoginFromReset')?.addEventListener('click', switchToLoginForm);
+    
+    // Auth buttons
+    document.getElementById('doLoginBtn')?.addEventListener('click', () => {
+        const id = document.getElementById('loginEmailPhone').value.trim(),
+              pass = document.getElementById('loginPassword').value;
+        if (!id||!pass) { showAuthMessage('Completează toate câmpurile'); return; }
+        loginUser(id, pass);
+    });
+    
+    document.getElementById('doRegisterBtn')?.addEventListener('click', () => {
+        const name = document.getElementById('regName').value.trim(),
+              email = document.getElementById('regEmail').value.trim(),
+              phone = document.getElementById('regPhone').value.trim(),
+              pass = document.getElementById('regPassword').value;
+        if (!name) { showAuthMessage('Nume obligatoriu'); return; }
+        if (!email&&!phone) { showAuthMessage('E-mail sau telefon necesar'); return; }
+        registerUser(name, email, phone, pass);
+    });
+    
+    document.getElementById('sendResetBtn')?.addEventListener('click', () => {
+        const contact = document.getElementById('resetContact').value.trim();
+        if (!contact) { showAuthMessage('Introdu e-mail sau telefon'); return; }
+        requestReset(contact);
+    });
+    
+    document.getElementById('confirmResetBtn')?.addEventListener('click', () => {
+        confirmReset(document.getElementById('resetCode').value.trim(), document.getElementById('newPassword').value);
+    });
+    
+    // Alte butoane
+    document.getElementById('logoutBtnMain')?.addEventListener('click', logoutUser);
+    document.getElementById('clearHistoryBtn')?.addEventListener('click', clearRideHistory);
+    document.getElementById('planRouteBtn')?.addEventListener('click', planRoutes);
+    document.getElementById('detectStartBtn')?.addEventListener('click', detectLocation);
+    document.getElementById('confirmRideBtn')?.addEventListener('click', () => {
+        if (!currentRoutes.length) { alert('Planificați o rută.'); return; }
+        const route = currentRoutes[selectedRouteIndex];
+        const price = calcDynamicPrice(route.distance/1000, Math.round(route.duration/60));
+        if (selectedDriver) showRideDetails(route, selectedDriver, document.getElementById('startPoint').value, document.getElementById('endPoint').value, price);
+        else alert(`Ruta: ${route.name}\nCost: ${price.total} lei`);
+    });
+    document.getElementById('confirmRideFinalBtn')?.addEventListener('click', confirmFinalRide);
+    document.getElementById('cancelRideBtn')?.addEventListener('click', cancelRide);
+    
+    // Cleanup
+    window.addEventListener('beforeunload', () => { if (trackingInterval) clearInterval(trackingInterval); });
+});
+</script>
+</body>
+</html>
